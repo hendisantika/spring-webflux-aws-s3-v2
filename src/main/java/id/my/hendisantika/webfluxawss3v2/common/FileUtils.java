@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import software.amazon.awssdk.core.SdkResponse;
 
 import java.nio.ByteBuffer;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -68,5 +70,11 @@ public class FileUtils {
 
         LOGGER.info("PartData: capacity={}", partData.capacity());
         return partData;
+    }
+
+    public void checkSdkResponse(SdkResponse sdkResponse) {
+        if (AwsSdkUtil.isErrorSdkHttpResponse(sdkResponse)) {
+            throw new UploadException(MessageFormat.format("{0} - {1}", sdkResponse.sdkHttpResponse().statusCode(), sdkResponse.sdkHttpResponse().statusText()));
+        }
     }
 }
