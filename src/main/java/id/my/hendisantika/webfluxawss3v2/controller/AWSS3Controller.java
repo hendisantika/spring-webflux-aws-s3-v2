@@ -6,6 +6,7 @@ import id.my.hendisantika.webfluxawss3v2.service.AWSS3FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
+
+import java.text.MessageFormat;
 
 /**
  * Created by IntelliJ IDEA.
@@ -49,4 +52,9 @@ public class AWSS3Controller {
                 .map(objectKey -> new SuccessResponse(objectKey, "Object byte response"));
     }
 
+    @DeleteMapping(path = "/{objectKey}")
+    public Mono<SuccessResponse> deleteFile(@PathVariable("objectKey") String objectKey) {
+        return fileStorageService.deleteObject(objectKey)
+                .map(resp -> new SuccessResponse(null, MessageFormat.format("Object with key: {0} deleted successfully", objectKey)));
+    }
 }
