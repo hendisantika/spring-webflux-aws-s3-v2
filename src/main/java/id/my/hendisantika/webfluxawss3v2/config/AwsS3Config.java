@@ -43,4 +43,11 @@ public class AwsS3Config {
                 .maxConcurrency(64)
                 .build();
     }
+
+    private S3Configuration s3Configuration() {
+        return S3Configuration.builder()
+                .checksumValidationEnabled(false)
+                .chunkedEncodingEnabled(true)
+                .build();
+    }
 }
