@@ -3,6 +3,8 @@ package id.my.hendisantika.webfluxawss3v2.common;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.Objects;
 
@@ -37,5 +39,10 @@ public class FileUtils {
 
     private boolean isValidType(final FilePart filePart) {
         return isSupportedContentType(Objects.requireNonNull(filePart.headers().getContentType()).toString());
+    }
+
+    private boolean isEmpty(final FilePart filePart) {
+        return StringUtils.isEmpty(filePart.filename())
+                && ObjectUtils.isEmpty(filePart.headers().getContentType());
     }
 }
