@@ -1,15 +1,25 @@
 package id.my.hendisantika.webfluxawss3v2.service;
 
+import id.my.hendisantika.webfluxawss3v2.common.FileUtils;
 import id.my.hendisantika.webfluxawss3v2.config.AwsProperties;
 import id.my.hendisantika.webfluxawss3v2.domain.AWSS3Object;
+import id.my.hendisantika.webfluxawss3v2.domain.FileResponse;
+import id.my.hendisantika.webfluxawss3v2.domain.UploadStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.BytesWrapper;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Created by IntelliJ IDEA.
@@ -51,5 +61,61 @@ public class AWSS3FileStorageService {
                 .map(it -> s3AsyncClient.getObject(it, AsyncResponseTransformer.toBytes()))
                 .flatMap(Mono::fromFuture)
                 .map(BytesWrapper::asByteArray);
+    }
+
+    public Mono<FileResponse> uploadObject(FilePart filePart) {
+        String filename = filePart.filename();
+
+        Map<String, String> metadata = Map.of("filename", filename);
+        // get media type
+        MediaType mediaType = ObjectUtils.defaultIfNull(filePart.headers().getContentType(), MediaType.APPLICATION_OCTET_STREAM);
+
+        CompletableFuture<CreateMultipartUploadResponse> s3AsyncClientMultipartUpload = s3AsyncClient
+                .createMultipartUpload(CreateMultipartUploadRequest.builder()
+                        .contentType(mediaType.toString())
+                        .key(filename)
+                        .metadata(metadata)
+                        .bucket(s3ConfigProperties.getS3BucketName())
+                        .build());
+
+        UploadStatus uploadStatus = new UploadStatus(Objects.requireNonNull(filePart.headers().getContentType()).toString(), filename);
+
+        return Mono.fromFuture(s3AsyncClientMultipartUpload)
+                .flatMapMany(response -> {
+                    FileUtils.checkSdkResponse(response);
+                    uploadStatus.setUploadId(response.uploadId());
+                    LOGGER.info("Upload object with ID={}", response.uploadId());
+                    return filePart.content();
+                })
+                .bufferUntil(dataBuffer -> {
+                    // Collect incoming values into multiple List buffers that will be emitted by the resulting Flux each time the given predicate returns true.
+                    uploadStatus.addBuffered(dataBuffer.readableByteCount());
+
+                    if (uploadStatus.getBuffered() >= s3ConfigProperties.getMultipartMinPartSize()) {
+                        LOGGER.info("BufferUntil - returning true, bufferedBytes={}, partCounter={}, uploadId={}",
+                                uploadStatus.getBuffered(), uploadStatus.getPartCounter(), uploadStatus.getUploadId());
+
+                        // reset buffer
+                        uploadStatus.setBuffered(0);
+                        return true;
+                    }
+
+                    return false;
+                })
+                .map(FileUtils::dataBufferToByteBuffer)
+                // upload part
+                .flatMap(byteBuffer -> uploadPartObject(uploadStatus, byteBuffer))
+                .onBackpressureBuffer()
+                .reduce(uploadStatus, (status, completedPart) -> {
+                    LOGGER.info("Completed: PartNumber={}, etag={}", completedPart.partNumber(), completedPart.eTag());
+                    (status).getCompletedParts().put(completedPart.partNumber(), completedPart);
+                    return status;
+                })
+                .flatMap(uploadStatus1 -> completeMultipartUpload(uploadStatus))
+                .map(response -> {
+                    FileUtils.checkSdkResponse(response);
+                    LOGGER.info("upload result: {}", response.toString());
+                    return new FileResponse(filename, uploadStatus.getUploadId(), response.location(), uploadStatus.getContentType(), response.eTag());
+                });
     }
 }
