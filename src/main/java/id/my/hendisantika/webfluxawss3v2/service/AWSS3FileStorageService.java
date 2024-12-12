@@ -1,9 +1,11 @@
 package id.my.hendisantika.webfluxawss3v2.service;
 
 import id.my.hendisantika.webfluxawss3v2.config.AwsProperties;
+import id.my.hendisantika.webfluxawss3v2.domain.AWSS3Object;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 /**
  * Created by IntelliJ IDEA.
@@ -21,4 +23,13 @@ import org.springframework.stereotype.Service;
 public class AWSS3FileStorageService {
     private final S3AsyncClient s3AsyncClient;
     private final AwsProperties s3ConfigProperties;
+
+    public Flux<AWSS3Object> getObjects() {
+        LOGGER.info("Listing objects in S3 bucket: {}", s3ConfigProperties.getS3BucketName());
+        return Flux.from(s3AsyncClient.listObjectsV2Paginator(ListObjectsV2Request.builder()
+                        .bucket(s3ConfigProperties.getS3BucketName())
+                        .build()))
+                .flatMap(response -> Flux.fromIterable(response.contents()))
+                .map(s3Object -> new AWSS3Object(s3Object.key(), s3Object.lastModified(), s3Object.eTag(), s3Object.size()));
+    }
 }
