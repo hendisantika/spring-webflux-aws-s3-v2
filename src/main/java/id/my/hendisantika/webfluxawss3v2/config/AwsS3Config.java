@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 
 import java.net.URI;
+import java.time.Duration;
 
 /**
  * Created by IntelliJ IDEA.
@@ -33,5 +35,12 @@ public class AwsS3Config {
                 .endpointOverride(URI.create(s3ConfigProperties.getEndpoint()))
                 .forcePathStyle(true)
                 .serviceConfiguration(s3Configuration()).build();
+    }
+
+    private SdkAsyncHttpClient sdkAsyncHttpClient() {
+        return NettyNioAsyncHttpClient.builder()
+                .writeTimeout(Duration.ZERO)
+                .maxConcurrency(64)
+                .build();
     }
 }
