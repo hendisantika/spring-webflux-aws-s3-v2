@@ -15,8 +15,10 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.BytesWrapper;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -116,6 +118,31 @@ public class AWSS3FileStorageService {
                     FileUtils.checkSdkResponse(response);
                     LOGGER.info("upload result: {}", response.toString());
                     return new FileResponse(filename, uploadStatus.getUploadId(), response.location(), uploadStatus.getContentType(), response.eTag());
+                });
+    }
+
+    private Mono<CompletedPart> uploadPartObject(UploadStatus uploadStatus, ByteBuffer buffer) {
+        final int partNumber = uploadStatus.getAddedPartCounter();
+        LOGGER.info("UploadPart - partNumber={}, contentLength={}", partNumber, buffer.capacity());
+
+        CompletableFuture<UploadPartResponse> uploadPartResponseCompletableFuture = s3AsyncClient.uploadPart(UploadPartRequest.builder()
+                        .bucket(s3ConfigProperties.getS3BucketName())
+                        .key(uploadStatus.getFileKey())
+                        .partNumber(partNumber)
+                        .uploadId(uploadStatus.getUploadId())
+                        .contentLength((long) buffer.capacity())
+                        .build(),
+                AsyncRequestBody.fromPublisher(Mono.just(buffer)));
+
+        return Mono
+                .fromFuture(uploadPartResponseCompletableFuture)
+                .map(uploadPartResult -> {
+                    FileUtils.checkSdkResponse(uploadPartResult);
+                    LOGGER.info("UploadPart - complete: part={}, etag={}", partNumber, uploadPartResult.eTag());
+                    return CompletedPart.builder()
+                            .eTag(uploadPartResult.eTag())
+                            .partNumber(partNumber)
+                            .build();
                 });
     }
 }
