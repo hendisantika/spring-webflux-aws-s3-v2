@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.text.MessageFormat;
@@ -56,5 +57,11 @@ public class AWSS3Controller {
     public Mono<SuccessResponse> deleteFile(@PathVariable("objectKey") String objectKey) {
         return fileStorageService.deleteObject(objectKey)
                 .map(resp -> new SuccessResponse(null, MessageFormat.format("Object with key: {0} deleted successfully", objectKey)));
+    }
+
+    @GetMapping
+    public Flux<SuccessResponse> getObject() {
+        return fileStorageService.getObjects()
+                .map(objectKey -> new SuccessResponse(objectKey, "Result found"));
     }
 }
