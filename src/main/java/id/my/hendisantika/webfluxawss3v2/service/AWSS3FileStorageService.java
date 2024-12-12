@@ -41,7 +41,7 @@ public class AWSS3FileStorageService {
     private final AwsProperties s3ConfigProperties;
 
     public Flux<AWSS3Object> getObjects() {
-        LOGGER.info("Listing objects in S3 bucket: {}", s3ConfigProperties.getS3BucketName());
+        log.info("Listing objects in S3 bucket: {}", s3ConfigProperties.getS3BucketName());
         return Flux.from(s3AsyncClient.listObjectsV2Paginator(ListObjectsV2Request.builder()
                         .bucket(s3ConfigProperties.getS3BucketName())
                         .build()))
@@ -50,7 +50,7 @@ public class AWSS3FileStorageService {
     }
 
     public Mono<Void> deleteObject(@NotNull String objectKey) {
-        LOGGER.info("Delete Object with key: {}", objectKey);
+        log.info("Delete Object with key: {}", objectKey);
         return Mono.just(DeleteObjectRequest.builder().bucket(s3ConfigProperties.getS3BucketName()).key(objectKey).build())
                 .map(s3AsyncClient::deleteObject)
                 .flatMap(Mono::fromFuture)
@@ -58,7 +58,7 @@ public class AWSS3FileStorageService {
     }
 
     public Mono<byte[]> getByteObject(@NotNull String key) {
-        LOGGER.debug("Fetching object as byte array from S3 bucket: {}, key: {}", s3ConfigProperties.getS3BucketName(), key);
+        log.debug("Fetching object as byte array from S3 bucket: {}, key: {}", s3ConfigProperties.getS3BucketName(), key);
         return Mono.just(GetObjectRequest.builder().bucket(s3ConfigProperties.getS3BucketName()).key(key).build())
                 .map(it -> s3AsyncClient.getObject(it, AsyncResponseTransformer.toBytes()))
                 .flatMap(Mono::fromFuture)
@@ -86,7 +86,7 @@ public class AWSS3FileStorageService {
                 .flatMapMany(response -> {
                     FileUtils.checkSdkResponse(response);
                     uploadStatus.setUploadId(response.uploadId());
-                    LOGGER.info("Upload object with ID={}", response.uploadId());
+                    log.info("Upload object with ID={}", response.uploadId());
                     return filePart.content();
                 })
                 .bufferUntil(dataBuffer -> {
@@ -94,7 +94,7 @@ public class AWSS3FileStorageService {
                     uploadStatus.addBuffered(dataBuffer.readableByteCount());
 
                     if (uploadStatus.getBuffered() >= s3ConfigProperties.getMultipartMinPartSize()) {
-                        LOGGER.info("BufferUntil - returning true, bufferedBytes={}, partCounter={}, uploadId={}",
+                        log.info("BufferUntil - returning true, bufferedBytes={}, partCounter={}, uploadId={}",
                                 uploadStatus.getBuffered(), uploadStatus.getPartCounter(), uploadStatus.getUploadId());
 
                         // reset buffer
@@ -109,21 +109,21 @@ public class AWSS3FileStorageService {
                 .flatMap(byteBuffer -> uploadPartObject(uploadStatus, byteBuffer))
                 .onBackpressureBuffer()
                 .reduce(uploadStatus, (status, completedPart) -> {
-                    LOGGER.info("Completed: PartNumber={}, etag={}", completedPart.partNumber(), completedPart.eTag());
+                    log.info("Completed: PartNumber={}, etag={}", completedPart.partNumber(), completedPart.eTag());
                     (status).getCompletedParts().put(completedPart.partNumber(), completedPart);
                     return status;
                 })
                 .flatMap(uploadStatus1 -> completeMultipartUpload(uploadStatus))
                 .map(response -> {
                     FileUtils.checkSdkResponse(response);
-                    LOGGER.info("upload result: {}", response.toString());
+                    log.info("upload result: {}", response.toString());
                     return new FileResponse(filename, uploadStatus.getUploadId(), response.location(), uploadStatus.getContentType(), response.eTag());
                 });
     }
 
     private Mono<CompletedPart> uploadPartObject(UploadStatus uploadStatus, ByteBuffer buffer) {
         final int partNumber = uploadStatus.getAddedPartCounter();
-        LOGGER.info("UploadPart - partNumber={}, contentLength={}", partNumber, buffer.capacity());
+        log.info("UploadPart - partNumber={}, contentLength={}", partNumber, buffer.capacity());
 
         CompletableFuture<UploadPartResponse> uploadPartResponseCompletableFuture = s3AsyncClient.uploadPart(UploadPartRequest.builder()
                         .bucket(s3ConfigProperties.getS3BucketName())
@@ -138,11 +138,31 @@ public class AWSS3FileStorageService {
                 .fromFuture(uploadPartResponseCompletableFuture)
                 .map(uploadPartResult -> {
                     FileUtils.checkSdkResponse(uploadPartResult);
-                    LOGGER.info("UploadPart - complete: part={}, etag={}", partNumber, uploadPartResult.eTag());
+                    log.info("UploadPart - complete: part={}, etag={}", partNumber, uploadPartResult.eTag());
                     return CompletedPart.builder()
                             .eTag(uploadPartResult.eTag())
                             .partNumber(partNumber)
                             .build();
                 });
+    }
+
+    /**
+     * This method is called when a part finishes uploading. It's primary function is to verify the ETag of the part
+     * we just uploaded.
+     */
+    private Mono<CompleteMultipartUploadResponse> completeMultipartUpload(UploadStatus uploadStatus) {
+        log.info("CompleteUpload - fileKey={}, completedParts.size={}",
+                uploadStatus.getFileKey(), uploadStatus.getCompletedParts().size());
+
+        CompletedMultipartUpload multipartUpload = CompletedMultipartUpload.builder()
+                .parts(uploadStatus.getCompletedParts().values())
+                .build();
+
+        return Mono.fromFuture(s3AsyncClient.completeMultipartUpload(CompleteMultipartUploadRequest.builder()
+                .bucket(s3ConfigProperties.getS3BucketName())
+                .uploadId(uploadStatus.getUploadId())
+                .multipartUpload(multipartUpload)
+                .key(uploadStatus.getFileKey())
+                .build()));
     }
 }
