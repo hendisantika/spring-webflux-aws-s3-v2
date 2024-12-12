@@ -34,4 +34,8 @@ public class FileUtils {
     private boolean isValidType(final FilePart filePart) {
         return isSupportedContentType(Objects.requireNonNull(filePart.headers().getContentType()).toString());
     }
+
+    private boolean isValidType(final FilePart filePart) {
+        return isSupportedContentType(Objects.requireNonNull(filePart.headers().getContentType()).toString());
+    }
 }
