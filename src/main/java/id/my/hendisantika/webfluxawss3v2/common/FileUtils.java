@@ -2,6 +2,9 @@ package id.my.hendisantika.webfluxawss3v2.common;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.codec.multipart.FilePart;
+
+import java.util.Objects;
 
 /**
  * Created by IntelliJ IDEA.
@@ -27,4 +30,8 @@ public class FileUtils {
             "image/svg+xml",
             "image/tiff"
     };
+
+    private boolean isValidType(final FilePart filePart) {
+        return isSupportedContentType(Objects.requireNonNull(filePart.headers().getContentType()).toString());
+    }
 }
