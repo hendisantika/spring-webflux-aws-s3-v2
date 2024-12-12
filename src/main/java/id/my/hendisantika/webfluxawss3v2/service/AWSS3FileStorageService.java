@@ -2,10 +2,12 @@ package id.my.hendisantika.webfluxawss3v2.service;
 
 import id.my.hendisantika.webfluxawss3v2.config.AwsProperties;
 import id.my.hendisantika.webfluxawss3v2.domain.AWSS3Object;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Created by IntelliJ IDEA.
@@ -31,5 +33,13 @@ public class AWSS3FileStorageService {
                         .build()))
                 .flatMap(response -> Flux.fromIterable(response.contents()))
                 .map(s3Object -> new AWSS3Object(s3Object.key(), s3Object.lastModified(), s3Object.eTag(), s3Object.size()));
+    }
+
+    public Mono<Void> deleteObject(@NotNull String objectKey) {
+        LOGGER.info("Delete Object with key: {}", objectKey);
+        return Mono.just(DeleteObjectRequest.builder().bucket(s3ConfigProperties.getS3BucketName()).key(objectKey).build())
+                .map(s3AsyncClient::deleteObject)
+                .flatMap(Mono::fromFuture)
+                .then();
     }
 }
