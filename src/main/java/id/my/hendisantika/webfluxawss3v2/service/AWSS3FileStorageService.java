@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.BytesWrapper;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 
 /**
  * Created by IntelliJ IDEA.
@@ -41,5 +43,13 @@ public class AWSS3FileStorageService {
                 .map(s3AsyncClient::deleteObject)
                 .flatMap(Mono::fromFuture)
                 .then();
+    }
+
+    public Mono<byte[]> getByteObject(@NotNull String key) {
+        LOGGER.debug("Fetching object as byte array from S3 bucket: {}, key: {}", s3ConfigProperties.getS3BucketName(), key);
+        return Mono.just(GetObjectRequest.builder().bucket(s3ConfigProperties.getS3BucketName()).key(key).build())
+                .map(it -> s3AsyncClient.getObject(it, AsyncResponseTransformer.toBytes()))
+                .flatMap(Mono::fromFuture)
+                .map(BytesWrapper::asByteArray);
     }
 }
