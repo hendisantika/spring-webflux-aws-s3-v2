@@ -6,6 +6,7 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -51,4 +52,21 @@ public class FileUtils {
         return Arrays.asList(contentTypes).contains(contentType);
     }
 
+    public ByteBuffer dataBufferToByteBuffer(List<DataBuffer> buffers) {
+        LOGGER.info("Creating ByteBuffer from {} chunks", buffers.size());
+
+        int partSize = 0;
+        for (DataBuffer b : buffers) {
+            partSize += b.readableByteCount();
+        }
+
+        ByteBuffer partData = ByteBuffer.allocate(partSize);
+        buffers.forEach(buffer -> partData.put(buffer.toByteBuffer()));
+
+        // Reset read pointer to first byte
+        partData.rewind();
+
+        LOGGER.info("PartData: capacity={}", partData.capacity());
+        return partData;
+    }
 }
