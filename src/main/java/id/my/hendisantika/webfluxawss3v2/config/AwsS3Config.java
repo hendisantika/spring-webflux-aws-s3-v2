@@ -3,6 +3,7 @@ package id.my.hendisantika.webfluxawss3v2.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -49,5 +50,10 @@ public class AwsS3Config {
                 .checksumValidationEnabled(false)
                 .chunkedEncodingEnabled(true)
                 .build();
+    }
+
+    @Bean
+    AwsCredentialsProvider awsCredentialsProvider() {
+        return () -> AwsBasicCredentials.create(s3ConfigProperties.getAccessKey(), s3ConfigProperties.getSecretKey());
     }
 }
