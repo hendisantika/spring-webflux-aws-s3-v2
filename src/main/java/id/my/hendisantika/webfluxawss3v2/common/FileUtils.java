@@ -6,6 +6,7 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -45,4 +46,9 @@ public class FileUtils {
         return StringUtils.isEmpty(filePart.filename())
                 && ObjectUtils.isEmpty(filePart.headers().getContentType());
     }
+
+    private boolean isSupportedContentType(final String contentType) {
+        return Arrays.asList(contentTypes).contains(contentType);
+    }
+
 }
