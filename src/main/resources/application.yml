@@ -7,3 +7,13 @@ aws:
   s3-bucket-name: my-test-bucket
   multipart-min-part-size: 5242880 # 5MB
   endpoint: http://localhost:4566/
+
+springdoc:
+  version: 1.0.0
+  swagger-ui:
+    path: /swagger-ui
+  api-docs:
+    path: /v3/api-doc
+
+application-description: '@project.description@'
+application-version: '@project.version@'
