@@ -1,5 +1,7 @@
 package id.my.hendisantika.webfluxawss3v2.domain;
 
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+
 import java.util.HashMap;
 import java.util.Map;
 
