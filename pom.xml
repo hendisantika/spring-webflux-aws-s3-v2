@@ -16,7 +16,7 @@
     <properties>
         <java.version>23</java.version>
         <aws.java.sdk.version>2.38.5</aws.java.sdk.version>
-        <apache.commons.version>3.19.0</apache.commons.version>
+        <apache.commons.version>3.20.0</apache.commons.version>
     </properties>
     <dependencies>
         <dependency>
