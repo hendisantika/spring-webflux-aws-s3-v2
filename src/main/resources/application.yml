@@ -1,12 +1,12 @@
 spring.application.name: spring-webflux-aws-s3-v2
 # AWS properties
 aws:
-  access-key: test
-  secret-key: test
-  region: eu-west-1
-  s3-bucket-name: my-test-bucket
+  access-key: ${AWS_ACCESS_KEY}
+  secret-key: ${AWS_SECRET_KEY}
+  region: ${AWS_REGION:ap-southeast-1}
+  s3-bucket-name: ${AWS_S3_BUCKET_NAME:your-bucket-name}
   multipart-min-part-size: 5242880 # 5MB
-  endpoint: http://localhost:4566/
+  endpoint: ${AWS_S3_ENDPOINT:}
 
 springdoc:
   version: 1.0.0

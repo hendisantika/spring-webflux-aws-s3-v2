@@ -1,0 +1,12 @@
+spring.application.name: spring-webflux-aws-s3-v2-test
+# AWS properties for testing
+aws:
+  access-key: test-access-key
+  secret-key: test-secret-key
+  region: us-east-1
+  s3-bucket-name: test-bucket
+  multipart-min-part-size: 5242880
+  endpoint: http://localhost:4566
+
+application-description: Spring WebFlux AWS S3 v2 Test
+application-version: 0.0.1-SNAPSHOT
