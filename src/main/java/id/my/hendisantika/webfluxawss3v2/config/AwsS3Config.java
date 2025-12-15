@@ -1,6 +1,7 @@
 package id.my.hendisantika.webfluxawss3v2.config;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -32,13 +33,19 @@ public class AwsS3Config {
 
     @Bean
     public S3AsyncClient s3AsyncClient(AwsCredentialsProvider awsCredentialsProvider) {
-        return S3AsyncClient.builder()
+        var builder = S3AsyncClient.builder()
                 .httpClient(sdkAsyncHttpClient())
                 .region(Region.of(s3ConfigProperties.getRegion()))
                 .credentialsProvider(awsCredentialsProvider)
-                .endpointOverride(URI.create(s3ConfigProperties.getEndpoint()))
-                .forcePathStyle(true)
-                .serviceConfiguration(s3Configuration()).build();
+                .serviceConfiguration(s3Configuration());
+
+        // Only set endpoint override if a custom endpoint is configured (e.g., for LocalStack or MinIO)
+        if (StringUtils.isNotBlank(s3ConfigProperties.getEndpoint())) {
+            builder.endpointOverride(URI.create(s3ConfigProperties.getEndpoint()))
+                    .forcePathStyle(true);
+        }
+
+        return builder.build();
     }
 
     private SdkAsyncHttpClient sdkAsyncHttpClient() {
