@@ -14,16 +14,17 @@ for uploading, downloading, listing, and deleting files from Amazon S3 using rea
 
 ## Tech Stack
 
-- **Java 23**
+- **Java 25**
 - **Spring Boot 4.0.0**
 - **Spring WebFlux** - Reactive web framework
-- **AWS SDK v2** - S3 async client with Netty NIO
-- **SpringDoc OpenAPI** - Swagger UI for API documentation
+- **AWS SDK v2 (2.40.x)** - S3 async client with Netty NIO
+- **SpringDoc OpenAPI 3.0** - Swagger UI for API documentation
 - **Lombok** - Reduce boilerplate code
+- **Apache Commons Lang 3** - Utility functions
 
 ## Prerequisites
 
-- Java 23 or higher
+- Java 25 or higher
 - Maven 3.9+
 - AWS Account with S3 access (or LocalStack/MinIO for local development)
 
