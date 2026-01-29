@@ -15,7 +15,7 @@
     <description>spring-webflux-aws-s3-v2</description>
     <properties>
         <java.version>25</java.version>
-        <aws.java.sdk.version>2.41.16</aws.java.sdk.version>
+        <aws.java.sdk.version>2.41.17</aws.java.sdk.version>
         <apache.commons.version>3.20.0</apache.commons.version>
     </properties>
     <dependencies>
